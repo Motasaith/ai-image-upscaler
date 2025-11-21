@@ -10,16 +10,62 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
+        /* Checkerboard background */
         .checkerboard {
             background-color: #1a1a1a;
-            background-image: linear-gradient(45deg, #252525 25%, transparent 25%), linear-gradient(-45deg, #252525 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #252525 75%), linear-gradient(-45deg, transparent 75%, #252525 75%);
+            background-image: 
+                linear-gradient(45deg, #252525 25%, transparent 25%), 
+                linear-gradient(-45deg, #252525 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #252525 75%), 
+                linear-gradient(-45deg, transparent 75%, #252525 75%);
             background-size: 20px 20px;
             background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
         }
-        img-comparison-slider { width: 100%; height: 100%; outline: none; border-radius: 12px; overflow: hidden; }
-        img-comparison-slider img { width: 100%; height: 100%; object-fit: contain; }
-        .slider-handle { width: 3px; background: #6366f1; height: 100%; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
-        .slider-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #6366f1; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
+        
+        /* FIX: Allow slider to adapt to image height naturally */
+        img-comparison-slider {
+            width: 100%;
+            height: auto; /* Changed from 100% to auto */
+            outline: none;
+            border-radius: 12px;
+            overflow: hidden;
+            --divider-width: 2px;
+            --divider-color: #6366f1;
+        }
+
+        /* FIX: Images fill width, height matches aspect ratio */
+        img-comparison-slider img {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-height: 80vh; /* Prevent super tall images from scrolling off screen */
+            object-fit: contain;
+        }
+
+        .slider-handle {
+            width: 3px;
+            background: #6366f1;
+            height: 100%;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .slider-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #6366f1;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.6);
+        }
+
+        /* Hide scrollbar for gallery */
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -27,48 +73,74 @@
 <body class="bg-gray-900 text-white min-h-screen font-sans selection:bg-indigo-500 selection:text-white">
 
     <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
         <div class="text-center mb-8 md:mb-12">
             <div class="inline-block px-3 py-1 bg-gray-800 rounded-full text-xs text-indigo-400 mb-2 border border-indigo-900">
-                API: Port 8001 | Dashboard: Port 8091
+                API: 8001 | Dashboard: 8091
             </div>
             <h1 class="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-600 mb-4">
                 Neural Restore
             </h1>
+            <p class="text-gray-400 text-sm md:text-lg">Batch Upscale, Denoise, and Face Restoration</p>
         </div>
 
+        <!-- Control Panel -->
         <div class="bg-gray-800 rounded-2xl p-6 shadow-xl mb-8 border border-gray-700">
             <div class="flex flex-col lg:flex-row items-center justify-between gap-6">
+                
                 <div class="flex-1 w-full">
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Upload Images (Select Multiple)</label>
                     <input type="file" id="imageInput" accept="image/*" multiple
-                        class="block w-full text-sm text-gray-400 file:mr-4 file:py-3 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer bg-gray-900 rounded-xl border border-gray-600">
+                        class="block w-full text-sm text-gray-400
+                        file:mr-4 file:py-3 file:px-6
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-indigo-600 file:text-white
+                        hover:file:bg-indigo-700 cursor-pointer bg-gray-900 rounded-xl border border-gray-600 transition-all">
                     <p id="fileCount" class="text-xs text-gray-500 mt-2 pl-2">No files selected</p>
                 </div>
-                <div class="flex items-center gap-4">
-                    <label class="flex items-center gap-2 cursor-pointer bg-gray-900 px-4 py-3 rounded-xl border border-gray-600">
-                        <input type="checkbox" id="faceEnhance" checked class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 bg-gray-700">
-                        <span class="text-gray-300">Enhance Faces</span>
+
+                <div class="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+                    <label class="flex items-center gap-2 cursor-pointer bg-gray-900 px-4 py-3 rounded-xl border border-gray-600 w-full justify-center sm:w-auto">
+                        <input type="checkbox" id="faceEnhance" checked class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 bg-gray-700 border-gray-500">
+                        <span class="text-gray-300 select-none">Enhance Faces</span>
                     </label>
+                    
                     <button onclick="processBatch()" id="restoreBtn"
-                        class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg flex items-center gap-2">
+                        class="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg transform transition active:scale-95 flex items-center justify-center gap-2">
                         <i class="fas fa-layer-group"></i> Process Batch
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Main Stage -->
+        <!-- Main Stage (Active Comparison) - FIXED HEIGHT ISSUE -->
         <div id="mainStage" class="hidden transition-all duration-500">
             <div class="flex justify-between items-end mb-4">
-                <h2 class="text-xl font-bold text-gray-300 flex items-center gap-2"><i class="fas fa-eye text-indigo-400"></i> Quality Inspector</h2>
+                <h2 class="text-xl font-bold text-gray-300 flex items-center gap-2">
+                    <i class="fas fa-eye text-indigo-400"></i> Quality Inspector
+                </h2>
                 <span id="currentFileName" class="text-sm text-gray-500 font-mono"></span>
             </div>
-            <div class="bg-gray-800 rounded-xl p-3 border border-gray-700 h-[600px] flex justify-center items-center checkerboard relative shadow-[0_0_30px_rgba(79,70,229,0.15)] mb-12">
+
+            <!-- FIX: Removed h-[600px] to let image decide height -->
+            <div class="bg-gray-800 rounded-xl p-3 border border-gray-700 flex justify-center items-center checkerboard relative shadow-[0_0_30px_rgba(79,70,229,0.15)] mb-12 min-h-[400px]">
+                
                 <img-comparison-slider id="sliderComponent">
+                    <!-- Before Image -->
                     <img slot="first" id="sliderBefore" src="" />
+                    <!-- After Image -->
                     <img slot="second" id="sliderAfter" src="" />
-                    <div slot="handle" class="slider-handle"><div class="slider-icon"><i class="fas fa-arrows-alt-h"></i></div></div>
+
+                    <!-- Handle -->
+                    <div slot="handle" class="slider-handle">
+                        <div class="slider-icon"><i class="fas fa-arrows-alt-h"></i></div>
+                    </div>
                 </img-comparison-slider>
-                <a id="downloadLink" href="#" download class="absolute bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-bold z-10"><i class="fas fa-download mr-1"></i> Download Result</a>
+
+                <a id="downloadLink" href="#" download class="absolute bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-bold z-10">
+                    <i class="fas fa-download mr-1"></i> Download Result
+                </a>
             </div>
         </div>
 
@@ -79,16 +151,19 @@
                 <div class="absolute inset-0 border-4 border-indigo-500 rounded-full border-t-transparent animate-spin"></div>
             </div>
             <h3 id="loaderText" class="text-xl font-semibold text-indigo-300 animate-pulse">Uploading...</h3>
+            <p class="text-gray-500 text-sm mt-2">Please wait, do not close this tab.</p>
         </div>
 
+        <!-- Gallery -->
         <div id="gallerySection" class="hidden">
             <h3 class="text-lg font-semibold text-gray-400 mb-4 border-b border-gray-700 pb-2">Batch Results</h3>
             <div id="galleryGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
         </div>
+
     </div>
 
     <script>
-        // --- FIX: Automatically detect the server IP/Domain ---
+        // Auto-detect IP
         const currentHost = window.location.hostname;
         const API_BASE_URL = `http://${currentHost}:8001`;
         console.log("API Configured at:", API_BASE_URL);
@@ -123,18 +198,12 @@
             formData.append('face_enhance', document.getElementById('faceEnhance').checked);
 
             try {
-                // 1. Submit Job
                 const submitRes = await fetch(`${API_BASE_URL}/enhance`, { method: 'POST', body: formData });
-                
-                if (!submitRes.ok) {
-                    const errText = await submitRes.text();
-                    throw new Error(`Upload Failed (Server says: ${errText})`);
-                }
+                if (!submitRes.ok) throw new Error(`Upload Failed: ${await submitRes.text()}`);
 
                 const jobData = await submitRes.json();
                 const jobId = jobData.job_id;
 
-                // 2. Poll
                 let isFinished = false;
                 let attempts = 0;
                 while (!isFinished) {
@@ -153,14 +222,12 @@
                             renderGallery(processedBatches);
                             if (processedBatches.length > 0) selectImage(0);
                         } else if (statusData.status === 'failed') {
-                            throw new Error("AI Model crashed while processing. Check Docker logs.");
+                            throw new Error("AI Model crashed. Check logs.");
                         }
-                    } catch (netErr) {
-                        console.warn("Polling ping failed, retrying...", netErr);
-                    }
+                    } catch (err) { console.warn("Polling retry..."); }
                 }
             } catch (error) {
-                console.error('FULL ERROR:', error);
+                console.error(error);
                 alert(`Error: ${error.message}`);
             } finally {
                 loader.classList.add('hidden');
@@ -191,8 +258,9 @@
                         canvas.width = img.width * targetScale;
                         canvas.height = img.height * targetScale;
                         const ctx = canvas.getContext('2d');
+                        // Important: Copy img exactly, just bigger
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resolve({ src: canvas.toDataURL(), width: img.width, height: img.height });
+                        resolve({ src: canvas.toDataURL() });
                     };
                     img.src = e.target.result;
                 };
@@ -203,14 +271,19 @@
         async function selectImage(index) {
             const item = processedBatches[index];
             document.getElementById('mainStage').classList.remove('hidden');
+            
+            // Set Result
             document.getElementById('sliderAfter').src = `${API_BASE_URL}${item.url}`;
             document.getElementById('downloadLink').href = `${API_BASE_URL}${item.url}`;
             document.getElementById('currentFileName').textContent = item.original_filename;
+
+            // Set Original (Resized)
             const originalFile = inputFilesMap[item.original_filename];
             if (originalFile) {
                 const processedOriginal = await resizeOriginalForPreview(originalFile, 4);
                 document.getElementById('sliderBefore').src = processedOriginal.src;
             }
+            
             document.getElementById('mainStage').scrollIntoView({ behavior: 'smooth' });
         }
     </script>
