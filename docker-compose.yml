@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  ai-restorer:
+    # CHANGE THIS to your actual Docker Hub username/repo
+    image: abdulraufazhar/ai-image-restorer:latest
+    container_name: ai-image-restorer-app
+    restart: always
+    ports:
+      - "8001:8001"
+      - "8091:8091"
+    volumes:
+      # Map the processed images to the VPS hard drive so they persist
+      - ./processed_images:/app/processed_images
+    environment:
+      - HOST=0.0.0.0
+    deploy:
+      resources:
+        limits:
+          # Optional: Prevent it from crashing the whole VPS
+          memory: 4G

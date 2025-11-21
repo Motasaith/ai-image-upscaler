@@ -1,0 +1,29 @@
+# 1. Ignore Virtual Environment
+
+venv/
+pycache/
+*.pyc
+
+# 2. CRITICAL: Ignore ALL Model Weights recursively
+
+*.pth
+*.pt
+*.bin
+*.onnx
+
+# 3. Ignore User Uploads/Outputs
+
+processed_images/
+test_inputs/
+test_results/
+processed/
+
+# 4. System files
+
+.DS_Store
+Thumbs.db
+
+# 5. Ignore library folders if they exist locally
+
+gfpgan/
+realesrgan/

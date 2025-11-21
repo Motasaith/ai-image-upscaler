@@ -1,0 +1,6 @@
+venv/
+processed_images/
+test_inputs/
+test_results/
+.git/
+pycache/
