@@ -1,29 +1,16 @@
-import uvicorn
 import multiprocessing
 import time
-import webbrowser
 import http.server
 import socketserver
 import os
 import sys
+import subprocess
+import uvicorn # Needed for Windows fallback
 
 # CONFIGURATION
-# 0.0.0.0 is REQUIRED for Docker. 
-# It tells the app to accept connections from outside the container.
 HOST = "0.0.0.0" 
 API_PORT = 8001
 DASHBOARD_PORT = 8091
-
-def run_api():
-    """Runs the FastAPI Backend"""
-    print(f"🧠 Starting API on http://{HOST}:{API_PORT}")
-    uvicorn.run(
-        "app.main:app", 
-        host=HOST, 
-        port=API_PORT, 
-        reload=True,
-        log_level="info"
-    )
 
 def run_dashboard():
     """Runs a simple HTTP server for the Frontend"""
@@ -39,28 +26,56 @@ def run_dashboard():
         print(f"🎨 Starting Dashboard on http://{HOST}:{DASHBOARD_PORT}")
         httpd.serve_forever()
 
+def run_api_windows():
+    """Fallback for Windows: Uses Uvicorn directly"""
+    print(f"🪟 Windows detected: Running Uvicorn (Dev Mode) on http://{HOST}:{API_PORT}")
+    uvicorn.run(
+        "app.main:app", 
+        host=HOST, 
+        port=API_PORT, 
+        log_level="info"
+    )
+
+def run_api_linux():
+    """Production for Linux/Docker: Uses Gunicorn"""
+    print(f"🐧 Linux detected: Running Gunicorn (Production Mode) on http://{HOST}:{API_PORT}")
+    
+    command = [
+        "gunicorn",
+        "-k", "uvicorn.workers.UvicornWorker",
+        "app.main:app",
+        "--bind", f"{HOST}:{API_PORT}",
+        "--workers", "1",
+        "--timeout", "300",
+        "--access-logfile", "-" 
+    ]
+    # Replaces the current process with Gunicorn (saves memory)
+    # Note: On Linux/Mac this works. On Windows, this function won't be called.
+    subprocess.run(command)
+
 if __name__ == "__main__":
-    api_process = multiprocessing.Process(target=run_api)
+    # 1. Start Dashboard (Always runs in background)
     dashboard_process = multiprocessing.Process(target=run_dashboard)
-
+    dashboard_process.start()
+    
+    time.sleep(1)
+    
     try:
-        api_process.start()
-        time.sleep(2)
-        dashboard_process.start()
-
         print("-" * 50)
-        print(f"🚀 DOCKER READY!")
-        print(f"👉 Open this link in your browser: http://localhost:{DASHBOARD_PORT}")
+        print(f"🚀 SERVER STARTING...")
+        print(f"👉 Dashboard: http://localhost:{DASHBOARD_PORT}")
+        print(f"👉 API:       http://localhost:{API_PORT}")
         print("-" * 50)
 
-        # Note: webbrowser.open() usually doesn't work inside Docker, 
-        # so we rely on the print message above.
-        
-        api_process.join()
-        dashboard_process.join()
+        # 2. Start API based on OS
+        if sys.platform == "win32":
+            # WINDOWS
+            run_api_windows()
+        else:
+            # LINUX / DOCKER
+            run_api_linux()
 
     except KeyboardInterrupt:
         print("\n🛑 Shutting down servers...")
-        api_process.terminate()
         dashboard_process.terminate()
         sys.exit(0)

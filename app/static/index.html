@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Image Restoration</title>
+    <title>AI Image Restoration - Production</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/img-comparison-slider@8/dist/index.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/img-comparison-slider@8/dist/index.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/img-comparison-slider@8/dist/styles.css"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
-        /* Checkerboard background */
+        /* Checkerboard background for transparency */
         .checkerboard {
             background-color: #1a1a1a;
             background-image: 
@@ -22,199 +22,273 @@
             background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
         }
         
-        /* FIX: Allow slider to adapt to image height naturally */
+        /* Slider Customization */
         img-comparison-slider {
             width: 100%;
-            height: auto; /* Changed from 100% to auto */
+            height: auto;
             outline: none;
             border-radius: 12px;
             overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             --divider-width: 2px;
             --divider-color: #6366f1;
+            --default-handle-opacity: 0; 
         }
 
-        /* FIX: Images fill width, height matches aspect ratio */
         img-comparison-slider img {
             width: 100%;
             height: auto;
             display: block;
-            max-height: 80vh; /* Prevent super tall images from scrolling off screen */
+            max-height: 80vh;
             object-fit: contain;
         }
 
+        /* Custom Handle Design */
         .slider-handle {
-            width: 3px;
-            background: #6366f1;
-            height: 100%;
-            position: relative;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-        .slider-icon {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #6366f1;
             width: 40px;
             height: 40px;
+            background: #6366f1; /* Indigo 500 */
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            box-shadow: 0 0 15px rgba(99, 102, 241, 0.6);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.3);
+            cursor: col-resize;
         }
 
-        /* Hide scrollbar for gallery */
+        /* Hide scrollbar */
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen font-sans selection:bg-indigo-500 selection:text-white">
 
-    <div class="container mx-auto px-4 py-8 max-w-7xl">
-        <!-- Header -->
-        <div class="text-center mb-8 md:mb-12">
-            <div class="inline-block px-3 py-1 bg-gray-800 rounded-full text-xs text-indigo-400 mb-2 border border-indigo-900">
-                API: 8001 | Dashboard: 8091
+    <div class="container mx-auto px-4 py-6 max-w-7xl">
+        
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div class="text-center md:text-left">
+                <h1 class="text-3xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-600">
+                    Neural Restore <span class="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded border border-gray-700 align-middle ml-2">PRO</span>
+                </h1>
+                <p class="text-gray-400 text-sm mt-1">Production Grade AI Upscaler</p>
             </div>
-            <h1 class="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-600 mb-4">
-                Neural Restore
-            </h1>
-            <p class="text-gray-400 text-sm md:text-lg">Batch Upscale, Denoise, and Face Restoration</p>
+
+            <div class="bg-gray-800 p-3 rounded-xl border border-gray-700 flex items-center gap-3 shadow-lg">
+                <i class="fas fa-key text-yellow-500"></i>
+                <div class="flex flex-col">
+                    <label class="text-[10px] uppercase text-gray-500 font-bold tracking-wider">API Access Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="Paste Key Here..." 
+                        class="bg-transparent border-none text-sm text-white focus:ring-0 p-0 w-48 placeholder-gray-600"
+                        onchange="saveKey(this.value)">
+                </div>
+            </div>
         </div>
 
-        <!-- Control Panel -->
-        <div class="bg-gray-800 rounded-2xl p-6 shadow-xl mb-8 border border-gray-700">
-            <div class="flex flex-col lg:flex-row items-center justify-between gap-6">
+        <div class="bg-gray-800 rounded-2xl p-6 shadow-xl mb-8 border border-gray-700 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-600 rounded-full filter blur-[100px] opacity-10 pointer-events-none"></div>
+
+            <div class="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
                 
                 <div class="flex-1 w-full">
-                    <label class="block text-sm font-medium text-gray-400 mb-2">Upload Images (Select Multiple)</label>
-                    <input type="file" id="imageInput" accept="image/*" multiple
-                        class="block w-full text-sm text-gray-400
-                        file:mr-4 file:py-3 file:px-6
-                        file:rounded-full file:border-0
-                        file:text-sm file:font-semibold
-                        file:bg-indigo-600 file:text-white
-                        hover:file:bg-indigo-700 cursor-pointer bg-gray-900 rounded-xl border border-gray-600 transition-all">
+                    <label class="block text-sm font-medium text-gray-400 mb-2">Upload Images (Max 10MB)</label>
+                    <div class="relative">
+                        <input type="file" id="imageInput" accept="image/*" multiple
+                            class="block w-full text-sm text-gray-400
+                            file:mr-4 file:py-3 file:px-6
+                            file:rounded-xl file:border-0
+                            file:text-sm file:font-semibold
+                            file:bg-indigo-600 file:text-white
+                            hover:file:bg-indigo-700 cursor-pointer bg-gray-900 rounded-xl border border-gray-600 transition-all focus:outline-none focus:border-indigo-500">
+                    </div>
                     <p id="fileCount" class="text-xs text-gray-500 mt-2 pl-2">No files selected</p>
                 </div>
 
                 <div class="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
-                    <label class="flex items-center gap-2 cursor-pointer bg-gray-900 px-4 py-3 rounded-xl border border-gray-600 w-full justify-center sm:w-auto">
+                    <label class="flex items-center gap-3 cursor-pointer bg-gray-900 px-5 py-3 rounded-xl border border-gray-600 hover:border-gray-500 transition-colors w-full justify-center sm:w-auto">
                         <input type="checkbox" id="faceEnhance" checked class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 bg-gray-700 border-gray-500">
-                        <span class="text-gray-300 select-none">Enhance Faces</span>
+                        <span class="text-gray-300 select-none font-medium">Face Restore</span>
                     </label>
                     
                     <button onclick="processBatch()" id="restoreBtn"
-                        class="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg transform transition active:scale-95 flex items-center justify-center gap-2">
-                        <i class="fas fa-layer-group"></i> Process Batch
+                        class="w-full sm:w-auto bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 px-8 rounded-xl shadow-lg transform transition active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-magic"></i> Enhance
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Main Stage (Active Comparison) - FIXED HEIGHT ISSUE -->
-        <div id="mainStage" class="hidden transition-all duration-500">
+        <div id="mainStage" class="hidden transition-all duration-500 animate-fade-in-up">
             <div class="flex justify-between items-end mb-4">
                 <h2 class="text-xl font-bold text-gray-300 flex items-center gap-2">
-                    <i class="fas fa-eye text-indigo-400"></i> Quality Inspector
+                    <i class="fas fa-eye text-indigo-400"></i> Inspector
                 </h2>
-                <span id="currentFileName" class="text-sm text-gray-500 font-mono"></span>
+                <span id="currentFileName" class="text-xs bg-gray-800 px-2 py-1 rounded text-gray-400 font-mono border border-gray-700"></span>
             </div>
 
-            <!-- FIX: Removed h-[600px] to let image decide height -->
-            <div class="bg-gray-800 rounded-xl p-3 border border-gray-700 flex justify-center items-center checkerboard relative shadow-[0_0_30px_rgba(79,70,229,0.15)] mb-12 min-h-[400px]">
+            <div class="bg-gray-800 rounded-xl p-2 border border-gray-700 flex justify-center items-center checkerboard relative shadow-[0_0_50px_rgba(0,0,0,0.5)] mb-12 min-h-[400px]">
                 
-                <img-comparison-slider id="sliderComponent">
-                    <!-- Before Image -->
+                <img-comparison-slider id="sliderComponent" class="rounded-lg">
                     <img slot="first" id="sliderBefore" src="" />
-                    <!-- After Image -->
                     <img slot="second" id="sliderAfter" src="" />
 
-                    <!-- Handle -->
                     <div slot="handle" class="slider-handle">
-                        <div class="slider-icon"><i class="fas fa-arrows-alt-h"></i></div>
+                        <i class="fas fa-arrows-left-right text-sm"></i>
                     </div>
                 </img-comparison-slider>
 
-                <a id="downloadLink" href="#" download class="absolute bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-bold z-10">
-                    <i class="fas fa-download mr-1"></i> Download Result
+                <a id="downloadLink" href="#" download class="absolute bottom-6 right-6 bg-gray-900/90 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-lg text-sm font-bold z-10 backdrop-blur-sm border border-gray-700 transition-all">
+                    <i class="fas fa-download mr-1"></i> Save
                 </a>
             </div>
         </div>
 
-        <!-- Loader -->
         <div id="loader" class="hidden flex flex-col items-center justify-center py-12">
-            <div class="relative w-24 h-24 mb-4">
+            <div class="relative w-20 h-20 mb-4">
                 <div class="absolute inset-0 border-4 border-indigo-900/50 rounded-full"></div>
                 <div class="absolute inset-0 border-4 border-indigo-500 rounded-full border-t-transparent animate-spin"></div>
             </div>
-            <h3 id="loaderText" class="text-xl font-semibold text-indigo-300 animate-pulse">Uploading...</h3>
-            <p class="text-gray-500 text-sm mt-2">Please wait, do not close this tab.</p>
+            <h3 id="loaderText" class="text-xl font-semibold text-indigo-300 animate-pulse">Processing...</h3>
+            <p class="text-gray-500 text-sm mt-2">You are in queue. Please wait.</p>
         </div>
 
-        <!-- Gallery -->
         <div id="gallerySection" class="hidden">
-            <h3 class="text-lg font-semibold text-gray-400 mb-4 border-b border-gray-700 pb-2">Batch Results</h3>
+            <h3 class="text-lg font-semibold text-gray-400 mb-4 border-b border-gray-700 pb-2">History / Results</h3>
             <div id="galleryGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
         </div>
 
     </div>
 
     <script>
-        // Auto-detect IP
+        // --- CONFIG ---
         const currentHost = window.location.hostname;
-        const API_BASE_URL = `http://${currentHost}:8001`;
-        console.log("API Configured at:", API_BASE_URL);
-
+        const API_BASE_URL = `http://${currentHost}:8001`; 
+        
+        const apiKeyInput = document.getElementById('apiKeyInput');
         const imageInput = document.getElementById('imageInput');
         const loader = document.getElementById('loader');
         const restoreBtn = document.getElementById('restoreBtn');
+        const loaderText = document.getElementById('loaderText'); 
+        
         let processedBatches = [];
         let inputFilesMap = {}; 
 
+        // 1. STARTUP: Load Key & Check Server Health
+        window.onload = async () => {
+            const savedKey = localStorage.getItem('ai_restore_api_key');
+            if(savedKey) apiKeyInput.value = savedKey;
+
+            // Health Check Visual Badge
+            const statusBadge = document.createElement('div');
+            statusBadge.className = "fixed bottom-4 left-4 px-3 py-1 rounded-full text-xs font-bold shadow-lg transition-colors duration-500 z-50 flex items-center gap-2";
+            statusBadge.id = "serverStatusBadge";
+            statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-gray-500"></span> Checking Server...`;
+            statusBadge.style.backgroundColor = "#1f2937"; // Gray-800
+            document.body.appendChild(statusBadge);
+
+            await checkServerHealth();
+        }
+
+        async function checkServerHealth() {
+            const badge = document.getElementById("serverStatusBadge");
+            try {
+                // Attempt to reach the API docs or root (timeout after 2s)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
+                
+                // We fetch /docs because it's lightweight and always exists in FastAPI
+                await fetch(`${API_BASE_URL}/docs`, { method: 'HEAD', signal: controller.signal });
+                
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Server Online`;
+                badge.className = badge.className.replace("bg-red-900", "bg-gray-800").replace("text-red-200", "text-green-400");
+                return true;
+            } catch (e) {
+                badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500"></span> Server Offline`;
+                badge.className = "fixed bottom-4 left-4 px-3 py-1 rounded-full text-xs font-bold shadow-lg z-50 flex items-center gap-2 bg-red-900 text-red-200 border border-red-700";
+                return false;
+            }
+        }
+
+        // 2. Save API Key
+        function saveKey(val) {
+            localStorage.setItem('ai_restore_api_key', val);
+        }
+
         imageInput.addEventListener('change', (e) => {
             const count = e.target.files.length;
-            document.getElementById('fileCount').textContent = count > 0 ? `${count} file(s) selected` : "No files selected";
+            document.getElementById('fileCount').textContent = count > 0 ? `${count} file(s) ready` : "No files selected";
             inputFilesMap = {};
             Array.from(e.target.files).forEach(file => inputFilesMap[file.name] = file);
         });
 
         async function processBatch() {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                alert('⚠️ API Key Missing! Please enter your key in the top right corner.');
+                apiKeyInput.focus();
+                return;
+            }
             if (!imageInput.files.length) return alert('Please select at least one image.');
 
-            // Reset UI
+            // Double check server before starting
+            const isOnline = await checkServerHealth();
+            if(!isOnline) {
+                alert("❌ Critical Error: Server is OFFLINE.\n\nPlease check if your Docker container is running.");
+                return;
+            }
+
+            // UI Reset
             document.getElementById('mainStage').classList.add('hidden');
             document.getElementById('gallerySection').classList.add('hidden');
             loader.classList.remove('hidden');
-            document.getElementById('loaderText').textContent = "Uploading & Queuing...";
+            loaderText.textContent = "Uploading & Queuing...";
             document.getElementById('galleryGrid').innerHTML = '';
             restoreBtn.disabled = true;
-            restoreBtn.classList.add('opacity-50');
 
             const formData = new FormData();
             for (let i = 0; i < imageInput.files.length; i++) formData.append('files', imageInput.files[i]);
             formData.append('face_enhance', document.getElementById('faceEnhance').checked);
 
             try {
-                const submitRes = await fetch(`${API_BASE_URL}/enhance`, { method: 'POST', body: formData });
+                // STEP 1: Submit Job
+                let submitRes;
+                try {
+                    submitRes = await fetch(`${API_BASE_URL}/enhance`, { 
+                        method: 'POST', 
+                        headers: { 'X-API-KEY': apiKey },
+                        body: formData 
+                    });
+                } catch (networkErr) {
+                    throw new Error("Connection Refused. Is the backend running on port 8001?");
+                }
+
+                if (submitRes.status === 403) throw new Error("Invalid API Key! Access Denied.");
                 if (!submitRes.ok) throw new Error(`Upload Failed: ${await submitRes.text()}`);
 
                 const jobData = await submitRes.json();
                 const jobId = jobData.job_id;
 
+                // STEP 2: Poll for Status (With Timeout Logic)
                 let isFinished = false;
                 let attempts = 0;
+                let consecErrors = 0; // Track consecutive connection failures
+                
                 while (!isFinished) {
                     attempts++;
-                    document.getElementById('loaderText').textContent = `AI Processing... (${attempts * 2}s)`;
+                    loaderText.textContent = `Queue Position: ${jobData.queue_position || '?'} | Processing... (${attempts * 2}s)`;
+                    
                     await new Promise(r => setTimeout(r, 2000));
                     
                     try {
                         const statusRes = await fetch(`${API_BASE_URL}/status/${jobId}`);
-                        if(!statusRes.ok) continue;
+                        
+                        if (!statusRes.ok) {
+                            if(statusRes.status === 404) throw new Error("Job ID lost (Server restarted?)");
+                            throw new Error(`Server Error: ${statusRes.status}`);
+                        }
+
                         const statusData = await statusRes.json();
+                        consecErrors = 0; // Reset error counter on success
 
                         if (statusData.status === 'completed') {
                             processedBatches = statusData.results;
@@ -222,17 +296,24 @@
                             renderGallery(processedBatches);
                             if (processedBatches.length > 0) selectImage(0);
                         } else if (statusData.status === 'failed') {
-                            throw new Error("AI Model crashed. Check logs.");
+                            throw new Error(statusData.error || "AI Model crashed.");
                         }
-                    } catch (err) { console.warn("Polling retry..."); }
+                    } catch (err) { 
+                        console.warn("Polling retry...", err);
+                        consecErrors++;
+                        // If server is unreachable 5 times in a row, assume it died.
+                        if (consecErrors >= 5) {
+                            throw new Error("Connection lost. The server seems to have crashed or stopped.");
+                        }
+                    }
                 }
             } catch (error) {
                 console.error(error);
-                alert(`Error: ${error.message}`);
+                checkServerHealth(); // Update the red badge immediately
+                alert(`❌ Error: ${error.message}`);
             } finally {
                 loader.classList.add('hidden');
                 restoreBtn.disabled = false;
-                restoreBtn.classList.remove('opacity-50');
             }
         }
 
@@ -241,24 +322,29 @@
             const grid = document.getElementById('galleryGrid');
             items.forEach((item, index) => {
                 const div = document.createElement('div');
-                div.className = 'bg-gray-800 rounded-lg p-2 border border-gray-700 cursor-pointer hover:border-indigo-500 transition-colors group';
+                div.className = 'bg-gray-800 rounded-lg p-2 border border-gray-700 cursor-pointer hover:border-indigo-500 transition-colors group relative';
                 div.onclick = () => selectImage(index);
-                div.innerHTML = `<img src="${API_BASE_URL}${item.url}" class="w-full h-24 object-cover rounded mb-1"><div class="text-xs text-gray-400 truncate px-1">${item.original_filename}</div>`;
+                div.innerHTML = `
+                    <img src="${API_BASE_URL}${item.url}" class="w-full h-24 object-cover rounded mb-1 bg-gray-900">
+                    <div class="text-[10px] text-gray-400 truncate px-1 font-mono">${item.original_filename}</div>
+                    <div class="absolute inset-0 bg-indigo-500/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"></div>
+                `;
                 grid.appendChild(div);
             });
         }
 
-        function resizeOriginalForPreview(file, targetScale = 4) {
+        function resizeOriginalForPreview(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        canvas.width = img.width * targetScale;
-                        canvas.height = img.height * targetScale;
+                        // Scale down if massive to save RAM
+                        const scale = Math.min(1, 2000 / img.width);
+                        canvas.width = img.width * scale;
+                        canvas.height = img.height * scale;
                         const ctx = canvas.getContext('2d');
-                        // Important: Copy img exactly, just bigger
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         resolve({ src: canvas.toDataURL() });
                     };
@@ -272,19 +358,19 @@
             const item = processedBatches[index];
             document.getElementById('mainStage').classList.remove('hidden');
             
-            // Set Result
+            // Set Result (Right side)
             document.getElementById('sliderAfter').src = `${API_BASE_URL}${item.url}`;
             document.getElementById('downloadLink').href = `${API_BASE_URL}${item.url}`;
             document.getElementById('currentFileName').textContent = item.original_filename;
 
-            // Set Original (Resized)
+            // Set Original (Left Side)
             const originalFile = inputFilesMap[item.original_filename];
             if (originalFile) {
-                const processedOriginal = await resizeOriginalForPreview(originalFile, 4);
+                const processedOriginal = await resizeOriginalForPreview(originalFile);
                 document.getElementById('sliderBefore').src = processedOriginal.src;
             }
             
-            document.getElementById('mainStage').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('mainStage').scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     </script>
 </body>
