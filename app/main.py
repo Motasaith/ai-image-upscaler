@@ -27,7 +27,7 @@ if not API_KEY:
 
 # 2. LIMITS: Changed to KB for precision
 # Default to 300KB if not set in .env
-MAX_FILE_SIZE_KB = int(os.getenv("MAX_FILE_SIZE_KB", 400)) 
+MAX_FILE_SIZE_KB = int(os.getenv("MAX_FILE_SIZE_KB", 300)) 
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_KB * 1024
 
 print(f"🔒 Max File Size set to: {MAX_FILE_SIZE_KB} KB")
@@ -212,7 +212,7 @@ async def submit_job(
                     os.remove(temp_path) # Delete immediately
                     raise HTTPException(
                         status_code=400, 
-                        detail=f"File {file.filename} exceeds {MAX_FILE_SIZE_MB}MB limit."
+                        detail=f"File {file.filename} exceeds {MAX_FILE_SIZE_KB}MB limit."
                     )
                 
                 temp_file_paths.append(temp_path)
