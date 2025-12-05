@@ -25,10 +25,12 @@ API_KEY_NAME = "X-API-KEY"
 if not API_KEY:
     print("⚠️ WARNING: API_KEY not set in .env file! Security is disabled or using default.")
 
-# 2. LIMITS: Prevent RAM explosion
-# Load max size from env, default to 10MB if missing
-MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", 10))
-MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
+# 2. LIMITS: Changed to KB for precision
+# Default to 300KB if not set in .env
+MAX_FILE_SIZE_KB = int(os.getenv("MAX_FILE_SIZE_KB", 400)) 
+MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_KB * 1024
+
+print(f"🔒 Max File Size set to: {MAX_FILE_SIZE_KB} KB")
 
 # 3. STORAGE
 UPLOAD_FOLDER = "temp_uploads"

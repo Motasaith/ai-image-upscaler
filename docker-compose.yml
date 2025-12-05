@@ -23,4 +23,4 @@ services:
       resources:
         limits:
           # Good safety measure for a CPU VPS
-          memory: 4G
+          memory: 7G
